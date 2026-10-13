@@ -1,4 +1,5 @@
 ---
+import DiffStat from './DiffStat.astro';
 import type { ChangedFile, RepoData } from '../lib/data';
 import { STATUS_LABEL, commitLabel, commitUrl, fileUrl, formatDate } from '../lib/data';
 
@@ -39,9 +40,9 @@ function tooltip(c: RepoData['commits'][number]): string {
         </>
       )}
     </span>
-    {file.additions > 0 && <span class="add">+{file.additions}</span>}
-    {file.deletions > 0 && <span class="del">−{file.deletions}</span>}
+    <DiffStat additions={file.additions} deletions={file.deletions} headBranch={repo.head.branch} baseBranch={repo.base.branch} />
     <span class="links">
+      <span class="muted">GitHub:</span>
       {urls.base && <a href={urls.base} target="_blank" rel="noopener">{repo.base.branch}</a>}
       {urls.head && <a href={urls.head} target="_blank" rel="noopener">{repo.head.branch}</a>}
     </span>

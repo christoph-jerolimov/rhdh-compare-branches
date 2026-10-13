@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import DiffStat from '../components/DiffStat.astro';
 import { loadRepos } from '../lib/data';
 
 const repos = loadRepos();
@@ -32,8 +33,9 @@ const first = repos[0];
             <li>
               <strong>{r.totals.files}</strong> files
             </li>
-            <li class="add">+{r.totals.additions}</li>
-            <li class="del">−{r.totals.deletions}</li>
+            <li>
+              <DiffStat additions={r.totals.additions} deletions={r.totals.deletions} headBranch={r.head.branch} baseBranch={r.base.branch} showZero />
+            </li>
           </ul>
         </div>
       ))}

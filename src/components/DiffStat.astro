@@ -1,0 +1,27 @@
+---
+// Added and removed line counts, each labelled with the branch the lines
+// belong to: added lines exist on the head branch, removed lines on the base.
+interface Props {
+  additions: number;
+  deletions: number;
+  headBranch: string;
+  baseBranch: string;
+  /** Render a zero count instead of omitting it. */
+  showZero?: boolean;
+}
+
+const { additions, deletions, headBranch, baseBranch, showZero = false } = Astro.props;
+---
+
+<span class="diffstat">
+  {(additions > 0 || showZero) && (
+    <span class="add" title={`${additions} lines only on ${headBranch}`}>
+      +{additions} <span class="branch">{headBranch}</span>
+    </span>
+  )}
+  {(deletions > 0 || showZero) && (
+    <span class="del" title={`${deletions} lines only on ${baseBranch}`}>
+      −{deletions} <span class="branch">{baseBranch}</span>
+    </span>
+  )}
+</span>

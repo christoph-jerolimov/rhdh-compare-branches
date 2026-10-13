@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import DiffStat from '../../components/DiffStat.astro';
 import FileDiff from '../../components/FileDiff.astro';
 import { groupFiles, loadRepos, summarizePullRequests, formatDate } from '../../lib/data';
 
@@ -32,8 +33,8 @@ const unresolved = repo.commits.filter((c) => c.pr === null).length;
       <a href={`${repo.url}/commit/${repo.head.sha}`} target="_blank" rel="noopener" class="mono">{repo.head.sha.slice(0, 7)}</a>
     </li>
     <li>
-      <strong>{repo.totals.files}</strong> files, <span class="add">+{repo.totals.additions}</span>{' '}
-      <span class="del">−{repo.totals.deletions}</span>
+      <strong>{repo.totals.files}</strong> files,{' '}
+      <DiffStat additions={repo.totals.additions} deletions={repo.totals.deletions} headBranch={repo.head.branch} baseBranch={repo.base.branch} showZero />
     </li>
     <li>
       {repo.commitsOnlyOnHead} commits only on <code>{repo.head.branch}</code>, {repo.commitsOnlyOnBase} only on{' '}
@@ -90,7 +91,7 @@ const unresolved = repo.commits.filter((c) => c.pr === null).length;
                     <td class="num">{formatDate(c.time)}</td>
                     <td class="num">{p.files.size}</td>
                     <td class="num">
-                      {p.added > 0 && <span class="add">+{p.added}</span>} {p.removed > 0 && <span class="del">−{p.removed}</span>}
+                      <DiffStat additions={p.added} deletions={p.removed} headBranch={repo.head.branch} baseBranch={repo.base.branch} />
                     </td>
                   </tr>
                 );
@@ -114,8 +115,7 @@ const unresolved = repo.commits.filter((c) => c.pr === null).length;
           <summary>
             <span class="mono">{g.name === '(root)' ? `(${groupLabel === 'workspace' ? 'outside workspaces' : 'root files'})` : g.name}</span>
             <span class="badge badge-count">{g.files.length} {g.files.length === 1 ? 'file' : 'files'}</span>
-            {g.additions > 0 && <span class="add">+{g.additions}</span>}
-            {g.deletions > 0 && <span class="del">−{g.deletions}</span>}
+            <DiffStat additions={g.additions} deletions={g.deletions} headBranch={repo.head.branch} baseBranch={repo.base.branch} />
           </summary>
           <div class="group-body">
             {g.files.map((f) => (
