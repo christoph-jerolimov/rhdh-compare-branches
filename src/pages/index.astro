@@ -1,0 +1,75 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { loadRepos } from '../lib/data';
+
+const repos = loadRepos();
+const base = import.meta.env.BASE_URL;
+const first = repos[0];
+---
+
+<Layout title="RHDH branch comparison" description="Differences between the release branch and main of the Red Hat Developer Hub repositories.">
+  <h1>RHDH branch comparison</h1>
+  {first ? (
+    <p class="muted">
+      Files that differ between <code>{first.base.branch}</code> and <code>{first.head.branch}</code>. Every changed line links to
+      the pull request (or commit) that last touched it. Generated {first.generatedAt.replace('T', ' ').slice(0, 16)} UTC.
+    </p>
+  ) : null}
+
+  {repos.length === 0 ? (
+    <div class="empty">
+      No comparison data found. Run <code>npm run collect</code> first, it writes <code>src/data/*.json</code>.
+    </div>
+  ) : (
+    <div class="cards">
+      {repos.map((r) => (
+        <div class="card">
+          <h2>
+            <a href={`${base}${r.name}/`}>{r.name}</a>
+          </h2>
+          <p class="muted small" style="margin:0">{r.description}</p>
+          <ul class="stats">
+            <li>
+              <strong>{r.totals.files}</strong> files
+            </li>
+            <li class="add">+{r.totals.additions}</li>
+            <li class="del">−{r.totals.deletions}</li>
+          </ul>
+          <ul class="stats muted small">
+            <li>
+              {r.commitsOnlyOnHead} commits only on <code>{r.head.branch}</code>
+            </li>
+            <li>
+              {r.commitsOnlyOnBase} commits only on <code>{r.base.branch}</code>
+            </li>
+          </ul>
+          <p class="small" style="margin:0.5rem 0 0">
+            <a href={`${r.url}/compare/${r.base.branch}...${r.head.branch}`} target="_blank" rel="noopener">
+              Compare on GitHub
+            </a>
+          </p>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <h2>How to read the diff</h2>
+  <ul class="small">
+    <li>
+      The left column of every changed line shows the pull request (<code>#1234</code>) or, when no pull request could be
+      determined, the short commit hash that last changed that line, taken from <code>git blame</code>.
+    </li>
+    <li>
+      Added lines are blamed on the <code>{first?.head.branch ?? 'main'}</code> branch, removed lines on the{' '}
+      <code>{first?.base.branch ?? 'release'}</code> branch (the commit that introduced the line that is no longer on{' '}
+      <code>{first?.head.branch ?? 'main'}</code>).
+    </li>
+    <li>
+      <span class="badge badge-head">green</span> references exist only on <code>{first?.head.branch ?? 'main'}</code>,{' '}
+      <span class="badge badge-base">yellow</span> ones only on <code>{first?.base.branch ?? 'release'}</code>, and{' '}
+      <span class="badge badge-both">grey</span> ones are on both branches. Hover a reference for the commit subject, author
+      and date.
+    </li>
+    <li>Lockfiles, vendored yarn releases and binary files are listed with their stats but without a rendered diff.</li>
+  </ul>
+</Layout>

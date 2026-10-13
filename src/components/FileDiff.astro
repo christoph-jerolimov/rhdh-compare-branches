@@ -1,0 +1,123 @@
+---
+import type { ChangedFile, RepoData } from '../lib/data';
+import { STATUS_LABEL, commitLabel, commitUrl, fileUrl, formatDate } from '../lib/data';
+
+interface Props {
+  repo: RepoData;
+  file: ChangedFile;
+}
+
+const { repo, file } = Astro.props;
+const urls = fileUrl(repo, file);
+const slash = file.path.lastIndexOf('/');
+const dir = slash === -1 ? '' : file.path.slice(0, slash + 1);
+const name = slash === -1 ? file.path : file.path.slice(slash + 1);
+const id = `file-${file.path.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`;
+
+function tooltip(c: RepoData['commits'][number]): string {
+  const where =
+    c.on === 'head'
+      ? `only on ${repo.head.branch}`
+      : c.on === 'base'
+        ? `only on ${repo.base.branch}`
+        : `on ${repo.base.branch} and ${repo.head.branch}`;
+  return `${c.summary}\n${c.author} · ${formatDate(c.time)} · ${c.short} (${where})`;
+}
+---
+
+<details class="file" id={id} data-path={file.path}>
+  <summary>
+    <span class={`status status-${file.status}`} title={STATUS_LABEL[file.status]}>{file.status}</span>
+    <span class="path">
+      {file.status === 'R' || file.status === 'C' ? (
+        <>
+          <span class="dir">{file.oldPath}</span> → <span class="dir">{dir}</span>{name}
+        </>
+      ) : (
+        <>
+          <span class="dir">{dir}</span>{name}
+        </>
+      )}
+    </span>
+    {file.additions > 0 && <span class="add">+{file.additions}</span>}
+    {file.deletions > 0 && <span class="del">−{file.deletions}</span>}
+    <span class="links">
+      {urls.base && <a href={urls.base} target="_blank" rel="noopener">{repo.base.branch}</a>}
+      {urls.head && <a href={urls.head} target="_blank" rel="noopener">{repo.head.branch}</a>}
+    </span>
+  </summary>
+  {file.skipped ? (
+    <p class="file-note">
+      Diff not rendered ({file.skipped}).{' '}
+      {urls.head && urls.base && (
+        <a href={`${repo.url}/compare/${repo.base.branch}...${repo.head.branch}`} target="_blank" rel="noopener">
+          Open the full comparison on GitHub
+        </a>
+      )}
+    </p>
+  ) : file.hunks.length === 0 ? (
+    <p class="file-note">No content changes (mode or rename only).</p>
+  ) : (
+    <table class="diff">
+      <colgroup>
+        <col class="col-ref" />
+        <col class="col-ln" />
+        <col class="col-ln" />
+        <col class="col-sign" />
+        <col />
+      </colgroup>
+      <tbody>
+        {file.hunks.map((h) => {
+          let last: number | null = null;
+          return (
+            <>
+              <tr class="hunk">
+                <td colspan="5">
+                  @@ -{h.oldStart},{h.oldLines} +{h.newStart},{h.newLines} @@ {h.header}
+                </td>
+              </tr>
+              {h.lines.map((l) => {
+                const cls = l.t === '+' ? 'add' : l.t === '-' ? 'del' : 'ctx';
+                let ref = null;
+                if (l.c !== null) {
+                  const c = repo.commits[l.c];
+                  if (l.c !== last) {
+                    ref = (
+                      <a class={`on-${c.on}`} href={commitUrl(repo, c)} target="_blank" rel="noopener" title={tooltip(c)}>
+                        {commitLabel(c)}
+                      </a>
+                    );
+                  }
+                  last = l.c;
+                } else {
+                  last = null;
+                }
+                return (
+                  <tr class={cls}>
+                    <td class="ref">{ref}</td>
+                    <td class="ln">{l.o ?? ''}</td>
+                    <td class="ln">{l.n ?? ''}</td>
+                    <td class="sign">{l.t === ' ' ? '' : l.t}</td>
+                    <td class="code">{l.s}{l.noNewline ? '⏎' : ''}</td>
+                  </tr>
+                );
+              })}
+            </>
+          );
+        })}
+        {file.truncated && (
+          <tr class="truncated">
+            <td colspan="5">
+              Diff truncated after {repo.maxDiffLines} lines.{' '}
+              {urls.head && (
+                <a href={urls.head} target="_blank" rel="noopener">
+                  Open the file on GitHub
+                </a>
+              )}
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  )}
+</details>

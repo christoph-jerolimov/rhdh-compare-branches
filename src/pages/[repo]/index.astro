@@ -1,0 +1,184 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import FileDiff from '../../components/FileDiff.astro';
+import { groupFiles, loadRepos, summarizePullRequests, formatDate } from '../../lib/data';
+
+export function getStaticPaths() {
+  return loadRepos().map((repo) => ({ params: { repo: repo.name }, props: { repo } }));
+}
+
+const { repo } = Astro.props;
+const groups = groupFiles(repo);
+const prs = summarizePullRequests(repo);
+const groupsOpenByDefault = repo.grouping !== 'workspace';
+const groupLabel = repo.grouping === 'workspace' ? 'workspace' : 'directory';
+const unresolved = repo.commits.filter((c) => c.pr === null).length;
+---
+
+<Layout
+  title={`${repo.name}: ${repo.base.branch} vs ${repo.head.branch}`}
+  description={`Files that differ between ${repo.base.branch} and ${repo.head.branch} in ${repo.fullName}.`}
+>
+  <h1>
+    <a href={repo.url} target="_blank" rel="noopener">{repo.fullName}</a>
+  </h1>
+  <ul class="repo-meta">
+    <li>
+      <code>{repo.base.branch}</code> @{' '}
+      <a href={`${repo.url}/commit/${repo.base.sha}`} target="_blank" rel="noopener" class="mono">{repo.base.sha.slice(0, 7)}</a>
+    </li>
+    <li>
+      <code>{repo.head.branch}</code> @{' '}
+      <a href={`${repo.url}/commit/${repo.head.sha}`} target="_blank" rel="noopener" class="mono">{repo.head.sha.slice(0, 7)}</a>
+    </li>
+    <li>
+      <strong>{repo.totals.files}</strong> files, <span class="add">+{repo.totals.additions}</span>{' '}
+      <span class="del">−{repo.totals.deletions}</span>
+    </li>
+    <li>
+      {repo.commitsOnlyOnHead} commits only on <code>{repo.head.branch}</code>, {repo.commitsOnlyOnBase} only on{' '}
+      <code>{repo.base.branch}</code>
+    </li>
+    <li>
+      <a href={`${repo.url}/compare/${repo.base.branch}...${repo.head.branch}`} target="_blank" rel="noopener">
+        Compare on GitHub
+      </a>
+    </li>
+    <li>generated {repo.generatedAt.replace('T', ' ').slice(0, 16)} UTC</li>
+  </ul>
+
+  {repo.files.length === 0 ? (
+    <div class="empty">
+      No differences between <code>{repo.base.branch}</code> and <code>{repo.head.branch}</code>.
+    </div>
+  ) : (
+    <>
+      <details class="group" id="pull-requests">
+        <summary>
+          Pull requests referenced by the changed lines
+          <span class="badge badge-count">{prs.length}</span>
+          {unresolved > 0 && <span class="muted small" style="font-weight:400">({unresolved} commits without a pull request)</span>}
+        </summary>
+        <div class="group-body">
+          <p class="muted small">
+            Sorted by the number of changed lines attributed to the pull request. <span class="badge badge-head">{repo.head.branch} only</span>{' '}
+            <span class="badge badge-base">{repo.base.branch} only</span> <span class="badge badge-both">both branches</span>
+          </p>
+          <table class="prs">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Subject</th>
+                <th>Author</th>
+                <th>Date</th>
+                <th>Files</th>
+                <th>Lines</th>
+              </tr>
+            </thead>
+            <tbody>
+              {prs.map((p) => {
+                const c = p.commits[0];
+                return (
+                  <tr>
+                    <td>
+                      <a class={`badge badge-${p.on}`} href={p.url} target="_blank" rel="noopener">
+                        {p.pr !== null ? `#${p.pr}` : c.short}
+                      </a>
+                    </td>
+                    <td>{p.title}</td>
+                    <td>{c.author}</td>
+                    <td class="num">{formatDate(c.time)}</td>
+                    <td class="num">{p.files.size}</td>
+                    <td class="num">
+                      {p.added > 0 && <span class="add">+{p.added}</span>} {p.removed > 0 && <span class="del">−{p.removed}</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <div class="toolbar">
+        <input type="search" id="filter" placeholder="Filter files by path…" aria-label="Filter files by path" />
+        <span class="muted small" id="filter-count"></span>
+        <button type="button" data-action="expand-groups">Expand all {groupLabel === 'workspace' ? 'workspaces' : 'directories'}</button>
+        <button type="button" data-action="collapse-groups">Collapse all</button>
+        <button type="button" data-action="expand-files">Expand all diffs</button>
+        <button type="button" data-action="collapse-files">Collapse all diffs</button>
+      </div>
+
+      {groups.map((g) => (
+        <details class="group" open={groupsOpenByDefault} data-group={g.name}>
+          <summary>
+            <span class="mono">{g.name === '(root)' ? `(${groupLabel === 'workspace' ? 'outside workspaces' : 'root files'})` : g.name}</span>
+            <span class="badge badge-count">{g.files.length} {g.files.length === 1 ? 'file' : 'files'}</span>
+            {g.additions > 0 && <span class="add">+{g.additions}</span>}
+            {g.deletions > 0 && <span class="del">−{g.deletions}</span>}
+          </summary>
+          <div class="group-body">
+            {g.files.map((f) => (
+              <FileDiff repo={repo} file={f} />
+            ))}
+          </div>
+        </details>
+      ))}
+    </>
+  )}
+</Layout>
+
+<script>
+  const filter = document.getElementById('filter') as HTMLInputElement | null;
+  const count = document.getElementById('filter-count');
+  const groups = [...document.querySelectorAll<HTMLDetailsElement>('details.group[data-group]')];
+  const files = [...document.querySelectorAll<HTMLDetailsElement>('details.file')];
+
+  function applyFilter() {
+    const q = (filter?.value ?? '').trim().toLowerCase();
+    let visible = 0;
+    for (const g of groups) {
+      let any = false;
+      for (const f of g.querySelectorAll<HTMLDetailsElement>('details.file')) {
+        const match = q === '' || (f.dataset.path ?? '').toLowerCase().includes(q);
+        f.classList.toggle('hidden', !match);
+        if (match) {
+          any = true;
+          visible++;
+        }
+      }
+      g.classList.toggle('hidden', !any);
+      if (q !== '' && any) g.open = true;
+    }
+    if (count) count.textContent = q === '' ? '' : `${visible} of ${files.length} files`;
+  }
+
+  filter?.addEventListener('input', applyFilter);
+
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.toolbar button[data-action]')) {
+    button.addEventListener('click', () => {
+      const action = button.dataset.action;
+      if (action === 'expand-groups') groups.forEach((g) => (g.open = true));
+      if (action === 'collapse-groups') groups.forEach((g) => (g.open = false));
+      if (action === 'expand-files') {
+        groups.forEach((g) => (g.open = true));
+        files.forEach((f) => (f.open = true));
+      }
+      if (action === 'collapse-files') files.forEach((f) => (f.open = false));
+    });
+  }
+
+  // Open the file (and its group) when the page is loaded with a #file anchor.
+  function openHash() {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (!id) return;
+    const target = document.getElementById(id);
+    if (!(target instanceof HTMLDetailsElement)) return;
+    target.open = true;
+    const group = target.closest<HTMLDetailsElement>('details.group');
+    if (group) group.open = true;
+    target.scrollIntoView();
+  }
+  window.addEventListener('hashchange', openHash);
+  openHash();
+</script>
