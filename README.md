@@ -15,7 +15,7 @@ plugin repositories the files are grouped and collapsed per workspace, for
 
 ## How it works
 
-1. `scripts/collect.mjs` clones the three repositories into `.repos/`, diffs
+1. `scripts/collect.ts` clones the three repositories into `.repos/`, diffs
    `origin/release-2.1` against `origin/main`, runs `git blame` for the changed
    line ranges on both sides and writes one JSON file per repository into
    `src/data/`.

@@ -1,75 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export type LineType = '+' | '-' | ' ';
+import type { ChangedFile, Commit, RepoData } from './types';
 
-export interface DiffLine {
-  t: LineType;
-  /** line number on the base branch (null for added lines) */
-  o: number | null;
-  /** line number on the head branch (null for removed lines) */
-  n: number | null;
-  /** line content */
-  s: string;
-  /** index into RepoData.commits, or null */
-  c: number | null;
-  noNewline?: boolean;
-}
-
-export interface Hunk {
-  oldStart: number;
-  oldLines: number;
-  newStart: number;
-  newLines: number;
-  header: string;
-  lines: DiffLine[];
-}
-
-export interface ChangedFile {
-  status: 'A' | 'M' | 'D' | 'R' | 'C' | 'T';
-  oldPath: string | null;
-  newPath: string | null;
-  path: string;
-  additions: number;
-  deletions: number;
-  binary: boolean;
-  group: string;
-  skipped: string | null;
-  truncated: boolean;
-  hunks: Hunk[];
-}
-
-export interface Commit {
-  sha: string;
-  short: string;
-  author: string;
-  /** unix seconds */
-  time: number;
-  summary: string;
-  pr: number | null;
-  /** which branch(es) contain the commit */
-  on: 'head' | 'base' | 'both';
-}
-
-export interface RepoData {
-  name: string;
-  owner: string;
-  fullName: string;
-  url: string;
-  description: string;
-  grouping: 'workspace' | 'topdir';
-  order: number;
-  generatedAt: string;
-  base: { branch: string; sha: string };
-  head: { branch: string; sha: string };
-  mergeBase: string;
-  commitsOnlyOnBase: number;
-  commitsOnlyOnHead: number;
-  totals: { files: number; additions: number; deletions: number };
-  maxDiffLines: number;
-  commits: Commit[];
-  files: ChangedFile[];
-}
+export type * from './types';
 
 // Resolved from the project root: during the build this module is bundled
 // into dist/, so import.meta.url cannot be used.
@@ -77,7 +11,7 @@ const dataDir = path.resolve(process.env.DATA_DIR || 'src/data');
 
 let cache: RepoData[] | null = null;
 
-/** Loads every src/data/*.json file written by scripts/collect.mjs. */
+/** Loads every src/data/*.json file written by scripts/collect.ts. */
 export function loadRepos(): RepoData[] {
   if (cache) return cache;
   const files = readdirSync(dataDir).filter((f) => f.endsWith('.json'));
@@ -161,7 +95,7 @@ export function summarizePullRequests(repo: RepoData): PullRequestSummary[] {
       }
     }
   }
-  return [...byKey.values()].sort((a, b) => b.added + b.removed - (a.added + a.removed));
+  return [...byKey.values()].sort((a, b) => b.added + b.removed - (a.added + a.removed) || a.key.localeCompare(b.key));
 }
 
 export function commitUrl(repo: RepoData, c: Commit): string {
