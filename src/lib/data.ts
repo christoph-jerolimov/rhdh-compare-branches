@@ -178,8 +178,8 @@ export function formatDate(unixSeconds: number): string {
 
 export function fileUrl(repo: RepoData, f: ChangedFile): { head: string | null; base: string | null } {
   return {
-    head: f.newPath ? `${repo.url}/blob/${repo.head.sha}/${f.newPath}` : null,
-    base: f.oldPath ? `${repo.url}/blob/${repo.base.sha}/${f.oldPath}` : null,
+    head: f.newPath ? `${repo.url}/blob/${repo.head.branch}/${f.newPath}` : null,
+    base: f.oldPath ? `${repo.url}/blob/${repo.base.branch}/${f.oldPath}` : null,
   };
 }
 

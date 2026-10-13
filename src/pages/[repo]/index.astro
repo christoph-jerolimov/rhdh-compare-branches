@@ -24,11 +24,11 @@ const unresolved = repo.commits.filter((c) => c.pr === null).length;
   </h1>
   <ul class="repo-meta">
     <li>
-      <code>{repo.base.branch}</code> @{' '}
+      <a href={`${repo.url}/tree/${repo.base.branch}`} target="_blank" rel="noopener"><code>{repo.base.branch}</code></a> @{' '}
       <a href={`${repo.url}/commit/${repo.base.sha}`} target="_blank" rel="noopener" class="mono">{repo.base.sha.slice(0, 7)}</a>
     </li>
     <li>
-      <code>{repo.head.branch}</code> @{' '}
+      <a href={`${repo.url}/tree/${repo.head.branch}`} target="_blank" rel="noopener"><code>{repo.head.branch}</code></a> @{' '}
       <a href={`${repo.url}/commit/${repo.head.sha}`} target="_blank" rel="noopener" class="mono">{repo.head.sha.slice(0, 7)}</a>
     </li>
     <li>
