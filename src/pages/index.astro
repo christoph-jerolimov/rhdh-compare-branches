@@ -35,19 +35,6 @@ const first = repos[0];
             <li class="add">+{r.totals.additions}</li>
             <li class="del">−{r.totals.deletions}</li>
           </ul>
-          <ul class="stats muted small">
-            <li>
-              {r.commitsOnlyOnHead} commits only on <code>{r.head.branch}</code>
-            </li>
-            <li>
-              {r.commitsOnlyOnBase} commits only on <code>{r.base.branch}</code>
-            </li>
-          </ul>
-          <p class="small" style="margin:0.5rem 0 0">
-            <a href={`${r.url}/compare/${r.base.branch}...${r.head.branch}`} target="_blank" rel="noopener">
-              Compare on GitHub
-            </a>
-          </p>
         </div>
       ))}
     </div>
