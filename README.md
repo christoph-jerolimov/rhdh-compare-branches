@@ -29,11 +29,10 @@ plugin repositories the files are grouped and collapsed per workspace, for
    into static pages.
 3. `.github/workflows/deploy.yml` runs both steps and publishes `dist/` to
    GitHub Pages on every push to `main`, on a schedule, and on demand (with
-   the branches as inputs). The schedule currently runs hourly during the
-   week of 2026-10-13 to 2026-10-18 only: the cron day/month fields limit the
-   dates and the `schedule-window` job skips scheduled runs after
-   `SCHEDULE_UNTIL`, because GitHub cron schedules have no end date. Change
-   both in `.github/workflows/deploy.yml` to run it on a different schedule.
+   the branches as inputs). The schedule currently runs every two hours
+   between 04:00 and 22:00 UTC on 13-30 October (`17 4-22/2 13-30 10 *`);
+   GitHub cron has no year field, so adjust it in
+   `.github/workflows/deploy.yml` afterwards.
 
 ## Local development
 

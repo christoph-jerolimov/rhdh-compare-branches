@@ -4,11 +4,9 @@ on:
   push:
     branches: [main]
   schedule:
-    # Rebuild every hour, but only during the week of 2026-10-13 to 2026-10-18.
-    # GitHub cron has no end date: the day/month fields limit it to these
-    # dates and the "schedule-window" job below stops it from firing again in
-    # later years. Remove or change both to run it permanently.
-    - cron: '17 * 13-18 10 *'
+    # Rebuild every two hours between 04:00 and 22:00 UTC, on 13-30 October.
+    # GitHub cron has no year field, so change or remove this afterwards.
+    - cron: '17 4-22/2 13-30 10 *'
   workflow_dispatch:
     inputs:
       base_branch:
@@ -30,30 +28,8 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-env:
-  # Last day (UTC) on which scheduled runs are executed.
-  SCHEDULE_UNTIL: '2026-10-18'
-
 jobs:
-  schedule-window:
-    runs-on: ubuntu-latest
-    outputs:
-      run: ${{ steps.check.outputs.run }}
-    steps:
-      - name: Skip scheduled runs after the configured end date
-        id: check
-        run: |
-          today=$(date -u +%F)
-          if [[ "${{ github.event_name }}" == "schedule" && "$today" > "$SCHEDULE_UNTIL" ]]; then
-            echo "Scheduled run on $today is after $SCHEDULE_UNTIL, skipping."
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          fi
-
   build:
-    needs: schedule-window
-    if: needs.schedule-window.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
