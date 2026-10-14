@@ -4,9 +4,10 @@ on:
   push:
     branches: [main]
   schedule:
-    # Rebuild every two hours between 04:00 and 22:00 UTC, on 13-30 October.
-    # GitHub cron has no year field, so change or remove this afterwards.
-    - cron: '17 4-22/2 13-30 10 *'
+    # Rebuild every day at 06:57 UTC. GitHub Actions cron is always UTC, so
+    # this is 08:57 in Germany during summer time (CEST) and 07:57 during
+    # winter time (CET).
+    - cron: '57 6 * * *'
   workflow_dispatch:
     inputs:
       base_branch:

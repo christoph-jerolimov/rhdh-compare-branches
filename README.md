@@ -28,11 +28,9 @@ plugin repositories the files are grouped and collapsed per workspace, for
 2. The [Astro](https://astro.build) site in `src/` renders those JSON files
    into static pages.
 3. `.github/workflows/deploy.yml` runs both steps and publishes `dist/` to
-   GitHub Pages on every push to `main`, on a schedule, and on demand (with
-   the branches as inputs). The schedule currently runs every two hours
-   between 04:00 and 22:00 UTC on 13-30 October (`17 4-22/2 13-30 10 *`);
-   GitHub cron has no year field, so adjust it in
-   `.github/workflows/deploy.yml` afterwards.
+   GitHub Pages on every push to `main`, every day at 06:57 UTC (08:57 CEST
+   or 07:57 CET, GitHub cron is always UTC), and on demand (with the
+   branches as inputs).
 
 ## Local development
 
